@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Multilingual Chatbot • Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root{
+            --bg: linear-gradient(135deg,#0ea5e9 0%, #6366f1 60%);
+            --card:#ffffff;
+            --muted:#6b7280;
+            --accent:#10b981;
+            --bubble-user:#e6f4ff;
+            --bubble-bot:#f3f4f6;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            min-height:100vh;
+            background:var(--bg);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:28px;
+            color:#073042;
+        }
+        .wrap {
+            width:100%;
+            max-width:1100px;
+            background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
+            border-radius:14px;
+            box-shadow:0 18px 40px rgba(2,6,23,0.18);
+            overflow:hidden;
+            display:grid;
+            grid-template-columns: 320px 1fr;
+            gap:0;
+        }
+        /* Sidebar */
+        .side {
+            padding:18px;
+            border-right:1px solid rgba(7,48,66,0.04);
+            background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+        }
+        h2{margin:0;font-size:18px}
+        p.sub{margin:6px 0 12px;color:var(--muted);font-size:13px}
+        label{font-size:13px;color:var(--muted);display:block;margin-top:8px}
+        select,input[type="text"]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(7,48,66,0.06);margin-top:6px;font-weight:500}
+        .row{display:flex;gap:8px}
+        .small{font-size:12px;color:var(--muted);margin-top:8px}
+        .btn {
+            padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:600;
+        }
+        .btn.primary { background:linear-gradient(90deg,#06b6d4,#3b82f6); color:white; }
+        .btn.ghost { background:transparent;border:1px solid rgba(7,48,66,0.06); color:#073042; }
+        .btn.warn { background:linear-gradient(90deg,#fb923c,#f97316); color:white; }
+        .btn i { pointer-events: none; }
+        /* Chat area */
+        .chat {
+            display:flex;flex-direction:column;height:640px;
+        }
+        .chat-header{
+            padding:18px;border-bottom:1px solid rgba(7,48,66,0.04);display:flex;align-items:center;justify-content:space-between;
+        }
+        .title { font-weight:700; }
+        .subtitle { color:var(--muted); font-size:13px; }
+        .messages {
+            padding:18px;flex:1;overflow:auto;background:linear-gradient(180deg, rgba(250,250,255,0.6), rgba(245,247,255,0.6));
+        }
+        .msg { display:flex; gap:12px; margin-bottom:12px; align-items:flex-end; }
+        .avatar { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white }
+        .avatar.bot { background:linear-gradient(90deg,#8b5cf6,#06b6d4) }
+        .avatar.you { background:linear-gradient(90deg,#ef4444,#fb7185) }
+        .bubble { padding:10px 12px;border-radius:12px;max-width:72%;box-shadow:0 6px 14px rgba(2,6,23,0.06) }
+        .bubble.bot { background:var(--bubble-bot); color:#05283a }
+        .bubble.you { background:var(--bubble-user); color:#05283a; margin-left:auto;text-align:right }
+        .meta { font-size:12px;color:var(--muted);margin-top:6px }
+        .chat-controls { padding:12px;border-top:1px solid rgba(7,48,66,0.04); display:flex; gap:8px; align-items:center }
+        .input {
+            flex:1; display:flex; gap:8px; align-items:center;
+        }
+        .text-input { flex:1;padding:10px;border-radius:10px;border:1px solid rgba(7,48,66,0.06) }
+        .small-actions { display:flex; gap:8px; align-items:center }
+        .lang-flag { font-size:18px;margin-right:8px }
+        /* responsive */
+        @media (max-width:980px){
+            .wrap { grid-template-columns: 1fr; height:auto }
+            .side { order:2 }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap" role="application" aria-label="Multilingual Chatbot">
+        <div class="side" aria-hidden="false">
+            <h2>Multilingual Chatbot</h2>
+            <p class="sub">Instantly translate messages & reply. Demo mode: LibreTranslate (no key). Use OpenAI (optional) for smarter replies.</p>
+
+            <label>Auto-detect input language?</label>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+                <label style="font-size:13px"><input type="checkbox" id="autoDetect" checked> Yes (recommended)</label>
+            </div>
+
+            <label>Target language (reply will be in this language)</label>
+            <select id="targetLang">
+                <option value="en">English</option>
+                <option value="hi">Hindi (हिन्दी)</option>
+                <option value="bn">Bengali (বাংলা)</option>
+                <option value="mr">Marathi (मराठी)</option>
+                <option value="gu">Gujarati (ગુજરાતી)</option>
+                <option value="pa">Punjabi (ਪੰਜਾਬੀ)</option>
+                <option value="ta">Tamil (தமிழ்)</option>
+                <option value="te">Telugu (తెలుగు)</option>
+                <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                <option value="ml">Malayalam (മലയാളം)</option>
+                <option value="or">Odia (ଓଡ଼ିଆ)</option>
+                <option value="as">Assamese (অসমীয়া)</option>
+                <option value="ur">Urdu (اردو)</option>
+                <option value="ne">Nepali (नेपाली)</option>
+                <option value="si">Sinhala (සිංහල)</option>
+                <option value="sd">Sindhi (सिन्धी/سنڌي)</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+                <option value="zh">Chinese (中文)</option>
+            </select>
+
+            <label style="margin-top:12px">Use smart AI replies (OpenAI) — optionally paste API key</label>
+            <input id="openaiKey" type="text" placeholder="Paste OpenAI API key (sk-...) — optional" />
+            <div class="small">If API key present, chatbot uses GPT to craft replies (then translates to target). If empty, demo uses smart-template replies.</div>
+
+            <div style="margin-top:12px" class="row">
+                <button class="btn primary" id="clearChat">Clear Chat</button>
+                <button class="btn ghost" id="exportTxt">Export TXT</button>
+            </div>
+
+            <div class="small" style="margin-top:14px">
+                <strong>Notes:</strong>
+                <ul style="padding-left:18px;margin:6px 0;color:var(--muted)">
+                    <li>LibreTranslate free instance used for translation/detection.</li>
+                    <li>OpenAI usage requires key and internet; costs may apply.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="chat" role="region" aria-label="Chat area">
+            <div class="chat-header">
+                <div>
+                    <div class="title">Global Chat Assistant</div>
+                    <div class="subtitle">Type a message — it will be translated & replied in the selected language</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <div id="langBadge" style="font-size:13px;color:var(--muted)"></div>
+                </div>
+            </div>
+
+            <div class="messages" id="messages" aria-live="polite">
+                <div style="margin-top:8px;color:var(--muted)">Start conversation by typing below. The bot will reply in the chosen language.</div>
+            </div>
+
+            <div class="chat-controls">
+                <div class="input">
+                    <input id="textInput" class="text-input" type="text" placeholder="Type your message..." />
+                    <button id="voiceBtn" class="btn ghost" title="Voice Input" style="width: 48px;"><i class="fas fa-microphone"></i></button>
+                    <select id="inputLang" style="width:140px;padding:8px;border-radius:8px;border:1px solid rgba(7,48,66,0.06)">
+                        <option value="auto">Auto-detect</option>
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                        <option value="bn">Bengali</option>
+                        <option value="mr">Marathi</option>
+                        <option value="gu">Gujarati</option>
+                        <option value="pa">Punjabi</option>
+                        <option value="ta">Tamil</option>
+                        <option value="te">Telugu</option>
+                        <option value="kn">Kannada</option>
+                        <option value="ml">Malayalam</option>
+                        <option value="or">Odia</option>
+                        <option value="as">Assamese</option>
+                        <option value="ur">Urdu</option>
+                        <option value="ne">Nepali</option>
+                        <option value="si">Sinhala</option>
+                        <option value="sd">Sindhi</option>
+                        <option value="fr">French</option>
+                        <option value="es">Spanish</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+                <div class="small-actions">
+                    <input type="file" id="fileInput" style="display:none;" />
+                    <button class="btn ghost" id="uploadBtn" title="Upload File" style="width: 48px;"><i class="fas fa-upload"></i></button>
+                    <button class="btn primary" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /*
+    Multilingual Chatbot (Demo)
+    - Translation & detection via LibreTranslate public instance (https://libretranslate.de)
+    - Optional: OpenAI integration for smarter replies: set apiKey in input field
+    - New features: Voice Input (Web Speech API) and File Upload (Frontend Only)
+    */
+
+    const messagesEl = document.getElementById('messages');
+    const textInput = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const inputLang = document.getElementById('inputLang');
+    const targetLang = document.getElementById('targetLang');
+    const autoDetect = document.getElementById('autoDetect');
+    const openaiKeyEl = document.getElementById('openaiKey');
+    const clearChatBtn = document.getElementById('clearChat');
+    const exportTxtBtn = document.getElementById('exportTxt');
+    const langBadge = document.getElementById('langBadge');
+
+    const voiceBtn = document.getElementById('voiceBtn');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    // LibreTranslate endpoint (public). Can change to your own instance if needed.
+    const TRANSLATE_BASE = 'https://libretranslate.de';
+
+    // Helper: append message
+    function appendMessage({who='bot', text='', lang='', meta=''}){
+        const msg = document.createElement('div');
+        msg.className = 'msg';
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar ' + (who==='bot' ? 'bot' : 'you');
+        avatar.textContent = who==='bot' ? 'B' : 'U';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (who==='bot' ? 'bot' : 'you');
+        bubble.innerHTML = `<div>${escapeHtml(text)}</div>${ meta ? `<div class="meta">${escapeHtml(meta)}</div>` : '' }`;
+        msg.appendChild(avatar);
+        msg.appendChild(bubble);
+        messagesEl.appendChild(msg);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // basic escape
+    function escapeHtml(s){
+        if (typeof s !== 'string') return '';
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // show user's message immediately
+    function sendUserMessage(rawText){
+        appendMessage({who:'you', text: rawText, meta: `Input (${ inputLang.value === 'auto' ? 'auto' : inputLang.value })`});
+    }
+
+    // detect language using LibreTranslate
+    async function detectLanguage(text){
+        try{
+            const resp = await fetch(TRANSLATE_BASE + '/detect', {
+                method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({q:text})
+            });
+            const data = await resp.json();
+            if (Array.isArray(data) && data.length) return data[0].language;
+        }catch(e){
+            console.warn('Detect failed', e);
+        }
+        return null;
+    }
+
+    // translate via LibreTranslate
+    async function translate(text, source, target){
+        try{
+            const body = { q: text, source: source || 'auto', target: target, format: 'text' };
+            const resp = await fetch(TRANSLATE_BASE + '/translate', {
+                method:'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await resp.json();
+            return data.translatedText || '';
+        }catch(e){
+            console.warn('Translate failed', e);
+            return '';
+        }
+    }
+
+    // Optional: if OpenAI API key provided, call chat completion to produce reply in English (or desired language)
+    async function openAiReply(prompt, apiKey){
+        try{
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method:'POST',
+                headers:{ 'Content-Type':'application/json', 'Authorization': 'Bearer ' + apiKey },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [{role:'system', content:'You are a helpful assistant.'},{role:'user', content:prompt}],
+                    max_tokens: 300
+                })
+            });
+            const d = await resp.json();
+            if (d && d.choices && d.choices[0] && d.choices[0].message) return d.choices[0].message.content;
+        }catch(err){
+            console.warn('OpenAI call failed', err);
+        }
+        return null;
+    }
+
+    // fallback simple reply generator (demo-only)
+    function simpleReply(inputTextLangDetected){
+        const t = inputTextLangDetected.toLowerCase();
+        if (t.includes('hello') || t.includes('hi')) return "Hello! How can I help you today?";
+        if (t.includes('how are') || t.includes('kaise') || t.includes('kya haal')) return "I'm fine, thank you — how can I support you today?";
+        if (t.includes('price') || t.includes('cost') || t.includes('kitne')) return "Could you tell me which product or service you're asking about?";
+        if (t.includes('bye') || t.includes('see you') || t.includes('phir milte')) return "Goodbye! Have a great day.";
+        return "Thanks for your message — tell me more so I can assist.";
+    }
+
+    // Main flow when user sends a message
+    async function handleSend(){
+        const raw = textInput.value.trim();
+        if (!raw) return;
+        textInput.value = '';
+        sendUserMessage(raw);
+
+        let detected = null;
+        if (autoDetect.checked || inputLang.value === 'auto'){
+            detected = await detectLanguage(raw) || 'en';
+        } else {
+            detected = inputLang.value;
+        }
+
+        langBadge.textContent = `Reply → ${targetLang.options[targetLang.selectedIndex].text}`;
+
+        let textForBot = raw;
+        if (detected !== 'en'){
+            const t = await translate(raw, detected, 'en');
+            textForBot = t || raw;
+        }
+
+        const apiKey = openaiKeyEl.value.trim();
+        let botReplyEnglish = null;
+        
+        if (apiKey){
+            appendMessage({who:'bot', text:'(thinking...)', meta:'AI' });
+            const aiResp = await openAiReply(textForBot, apiKey);
+            messagesEl.querySelectorAll('.msg').forEach(n => {
+                const meta = n.querySelector('.meta');
+                if (meta && meta.innerText.includes('AI') && n.querySelector('div').innerText.includes('(thinking...)')) {
+                    n.remove();
+                }
+            });
+            if (aiResp) botReplyEnglish = aiResp;
+        }
+        
+        if (!botReplyEnglish){
+            botReplyEnglish = simpleReply(textForBot);
+        }
+
+        const tgt = targetLang.value || 'en';
+        let finalBotReply = botReplyEnglish;
+        if (tgt !== 'en'){
+            const trans = await translate(botReplyEnglish, 'en', tgt);
+            if (trans) finalBotReply = trans;
+        }
+
+        appendMessage({who:'bot', text: finalBotReply, meta: `Reply language: ${targetLang.value}`});
+    }
+
+    // Event listeners
+    sendBtn.addEventListener('click', handleSend);
+    textInput.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') handleSend(); });
+    clearChatBtn.addEventListener('click', ()=>{ messagesEl.innerHTML=''; appendSystemNotice(); });
+    exportTxtBtn.addEventListener('click', ()=>{
+        const lines = Array.from(messagesEl.querySelectorAll('.msg')).map(m=>{
+            const who = m.querySelector('.avatar').textContent === 'U' ? 'User' : 'Bot';
+            const t = m.querySelector('.bubble').innerText.replace(/\n+$/,'');
+            return `${who}: ${t}`;
+        }).join('\n\n');
+        const blob = new Blob([lines], { type:'text/plain' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='chat_transcript.txt'; a.click();
+    });
+
+    // Voice Input logic
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        voiceBtn.addEventListener('click', () => {
+            const currentLang = inputLang.value === 'auto' ? 'en-US' : inputLang.value;
+            recognition.lang = currentLang;
+            recognition.start();
+            textInput.placeholder = "Listening...";
+        });
+
+        recognition.addEventListener('result', (e) => {
+            const transcript = Array.from(e.results)
+                .map(result => result[0].transcript)
+                .join('');
+            textInput.value = transcript;
+        });
+
+        recognition.addEventListener('end', () => {
+            textInput.placeholder = "Type your message...";
+            if(textInput.value.trim() !== '') {
+                handleSend();
+            }
+        });
+
+        recognition.addEventListener('error', (e) => {
+            console.error('Speech recognition error:', e.error);
+            textInput.placeholder = "Type your message...";
+            alert('Speech recognition failed. Please try again.');
+        });
+    } else {
+        voiceBtn.style.display = 'none';
+        console.warn('Web Speech API is not supported in this browser.');
+    }
+
+    // File Upload logic (Frontend only)
+    uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            appendMessage({who: 'you', text: `Uploaded file: ${file.name}`});
+            setTimeout(() => {
+                appendMessage({who: 'bot', text: 'Thank you for uploading the file. This feature is under development and will be able to process files soon!'});
+            }, 1500);
+        }
+    });
+
+    function appendSystemNotice(){
+        appendMessage({who:'bot', text:'(System) This is a demo multilingual chatbot. Use the sidebar to change settings. For best results, provide an OpenAI API key to enable smarter responses.', meta:''});
+    }
+    appendSystemNotice();
+    </script>
+</body>
+</html>
